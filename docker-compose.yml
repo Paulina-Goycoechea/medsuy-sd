@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+
+
+  # FRONTEND (React + Vite + Nginx)
+  frontend:
+    build: ./frontend
+    container_name: medsuy_frontend
+    ports:
+      - "3000:80"   # Acceso al frontend desde localhost:3000
+    depends_on:
+      - backend
+    networks:
+      - medsuy_net
+
+
+  # BACKEND (FastAPI / Flask)
+  backend:
+    build: ./backend
+    container_name: medsuy_backend
+    ports:
+      - "8000:8000"   # Acceso a /docs o /api
+    env_file: .env
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - medsuy_net
+
+
+  # WORKER (RabbitMQ Consumer)
+  worker:
+    build: ./worker
+    container_name: medsuy_worker
+    restart: always
+    env_file: .env
+    depends_on:
+      - rabbitmq
+    networks:
+      - medsuy_net
+
+
+  # RABBITMQ + PANEL
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"      # Puerto AMQP (backend y worker)
+      - "15672:15672"    # Panel web http://localhost:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - medsuy_net
+
+
+  # BASE DE DATOS POSTGRESQL
+  postgres:
+    image: postgres:15
+    container_name: medsuy_postgres
+    ports:
+      - "5433:5432"   
+    environment:
+      POSTGRES_USER: medsuy
+      POSTGRES_PASSWORD: medsuypass
+      POSTGRES_DB: medsuydb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - medsuy_net
+
+
+# REDES Y VOLUMENES
+networks:
+  medsuy_net:
+
+volumes:
+  postgres_data:

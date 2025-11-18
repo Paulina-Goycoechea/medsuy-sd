@@ -1,0 +1,9 @@
+pika
+fastapi
+psycopg2-binary
+sqlalchemy
+uvicorn[standard]
+fastapi
+asyncpg
+python-dotenv
+pydantic
