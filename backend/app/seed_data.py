@@ -1,6 +1,6 @@
 # app/seed_data.py
 import asyncio
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from app.db import engine, Base, AsyncSessionLocal
@@ -29,9 +29,9 @@ async def seed():
     async with AsyncSessionLocal() as session:
         print(">>> Insertando datos...")
 
-        # ==========================
+        # ======================================
         # USUARIOS
-        # ==========================
+        # ======================================
         admin_user = Usuario(
             nombre="Paula",
             apellido="Admin",
@@ -43,7 +43,6 @@ async def seed():
         )
         session.add(admin_user)
         await session.flush()
-
         session.add(Admin(usuario_id=admin_user.id))
 
         medico_user = Usuario(
@@ -57,7 +56,6 @@ async def seed():
         )
         session.add(medico_user)
         await session.flush()
-
         session.add(Medico(
             usuario_id=medico_user.id,
             especialidades=["cardiología", "pediatría"]
@@ -74,12 +72,11 @@ async def seed():
         )
         session.add(paciente_user)
         await session.flush()
-
         session.add(Paciente(usuario_id=paciente_user.id))
 
-        # ==========================
+        # ======================================
         # SUCURSALES
-        # ==========================
+        # ======================================
         s1 = Sucursal(
             nombre="Sucursal Centro",
             direccion="Av. Principal 123",
@@ -95,25 +92,47 @@ async def seed():
         session.add_all([s1, s2])
         await session.flush()
 
-        # ==========================
-        # CONSULTAS
-        # ==========================
+        # ======================================
+        # CONSULTA RESERVADA (ejemplo)
+        # ======================================
         consulta1 = Consulta(
             sucursal_id=s1.id,
             medico_id=medico_user.id,
             paciente_id=paciente_user.id,
-            fecha_hora=datetime(2025, 1, 20, 10, 0),
+            fecha_hora=datetime.utcnow() + timedelta(days=1),
             sala="Sala 1",
             especialidad="cardiología",
+            estado="reservado",
         )
         session.add(consulta1)
 
-        # ==========================
+        # ======================================
+        # CONSULTAS DISPONIBLES (para probar reserva)
+        # ======================================
+        available_slots = []
+        now = datetime.utcnow()
+
+        for i in range(3):
+            available_slots.append(
+                Consulta(
+                    sucursal_id=s1.id,
+                    medico_id=medico_user.id,
+                    paciente_id=None,
+                    fecha_hora=now + timedelta(days=1, hours=i+1),
+                    sala=f"Sala {i+2}",
+                    especialidad="cardiología",
+                    estado="disponible",
+                )
+            )
+
+        session.add_all(available_slots)
+
+        # ======================================
         # ESTUDIOS
-        # ==========================
+        # ======================================
         estudio1 = Estudio(
             nombre="Electrocardiograma",
-            fecha=date(2025, 1, 22),
+            fecha=date.today() + timedelta(days=3),
             hora=time(14, 30),
             medico_id=medico_user.id,
             paciente_id=paciente_user.id,
@@ -121,15 +140,14 @@ async def seed():
         session.add(estudio1)
         await session.flush()
 
-        # Relación N:M sucursal-estudio
         session.add(SucursalEstudio(
             sucursal_id=s1.id,
             estudio_id=estudio1.id
         ))
 
-        # ==========================
+        # ======================================
         # MEDICAMENTOS
-        # ==========================
+        # ======================================
         paracetamol = Medicamento(
             nombre="Paracetamol 500mg",
             precio=Decimal("150.00")
@@ -141,14 +159,14 @@ async def seed():
         session.add_all([paracetamol, ibuprofeno])
         await session.flush()
 
-        # ==========================
-        # RECETAS Y RECETA_MEDICAMENTO
-        # ==========================
+        # ======================================
+        # RECETAS
+        # ======================================
         receta1 = Receta(
             medico_id=medico_user.id,
             paciente_id=paciente_user.id,
-            desde=date(2025, 1, 10),
-            hasta=date(2025, 1, 20),
+            desde=date.today(),
+            hasta=date.today() + timedelta(days=5),
             frecuencia="Cada 8 horas"
         )
         session.add(receta1)
@@ -159,9 +177,9 @@ async def seed():
             RecetaMedicamento(receta_id=receta1.id, medicamento_id=ibuprofeno.id),
         ])
 
-        # ==========================
+        # ======================================
         # COMPRAS
-        # ==========================
+        # ======================================
         compra1 = Compra(
             paciente_id=paciente_user.id,
             medicamento_id=paracetamol.id,
@@ -169,11 +187,8 @@ async def seed():
         )
         session.add(compra1)
 
-        # ==========================
-        # GUARDAR TODO
-        # ==========================
         await session.commit()
-        print(">>> Seed completado.")
+        print(">>> Seed completado con éxito")
 
 
 if __name__ == "__main__":

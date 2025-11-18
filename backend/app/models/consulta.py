@@ -29,35 +29,38 @@ class Consulta(Base):
         Index("idx_consulta_medico", "medico_id"),
         Index("idx_consulta_paciente", "paciente_id"),
         Index("idx_consulta_fecha", "fecha_hora"),
+        Index("idx_consulta_estado", "estado"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+
     sucursal_id: Mapped[int] = mapped_column(
-        BigInteger,
-        ForeignKey("sucursal.id"),
-        nullable=False,
+        BigInteger, ForeignKey("sucursal.id"), nullable=False
     )
     medico_id: Mapped[int] = mapped_column(
-        BigInteger,
-        ForeignKey("medico.usuario_id"),
-        nullable=False,
+        BigInteger, ForeignKey("medico.usuario_id"), nullable=False
     )
+
+    # Si está disponible → paciente_id es NULL
     paciente_id: Mapped[int | None] = mapped_column(
-        BigInteger,
-        ForeignKey("paciente.usuario_id"),
-        nullable=True,
+        BigInteger, ForeignKey("paciente.usuario_id"), nullable=True
     )
+
     fecha_hora: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     sala: Mapped[str] = mapped_column(String(50), nullable=False)
     especialidad: Mapped[str | None] = mapped_column(String(100))
+
+    # dos estados:
+    # - "disponible"
+    # - "reservado"
+    estado: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="disponible"
+    )
+
     is_activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    sucursal: Mapped["Sucursal"] = relationship(
-        back_populates="consultas",
-    )
-    medico: Mapped["Medico"] = relationship(
-        back_populates="consultas",
-    )
-    paciente: Mapped["Paciente | None"] = relationship(
-        back_populates="consultas",
-    )
+    sucursal: Mapped["Sucursal"] = relationship(back_populates="consultas")
+    medico: Mapped["Medico"] = relationship(back_populates="consultas")
+    paciente: Mapped["Paciente | None"] = relationship(back_populates="consultas")
